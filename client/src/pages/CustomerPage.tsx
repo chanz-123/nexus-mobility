@@ -1024,7 +1024,7 @@ export const CustomerPage: React.FC = () => {
         <div className="absolute top-4 left-4 z-10 bg-white/90 backdrop-blur-md px-4 py-2 rounded-2xl shadow-md border border-gray-200 flex items-center gap-2">
           <div className="w-3 h-3 rounded-full bg-emerald-500 animate-pulse" />
           <span className="text-xs sm:text-sm font-black text-gray-800">
-            Bản đồ lộ trình OpenStreetMap (Hà Nội)
+            Bản đồ số định vị Nexus Mobility (Hà Nội)
           </span>
         </div>
 

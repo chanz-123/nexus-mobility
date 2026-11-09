@@ -30,6 +30,7 @@ export const createApp = (): Application => {
             "https://*.tile.openstreetmap.org",
             "https://tile.openstreetmap.org",
             "https://*.basemaps.cartocdn.com",
+            "https://basemaps.cartocdn.com",
             "https://unpkg.com",
           ],
           connectSrc: [
