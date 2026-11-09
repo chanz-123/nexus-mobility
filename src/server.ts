@@ -11,7 +11,7 @@ const httpServer = http.createServer(app);
 // Khởi tạo Socket.IO Server thời gian thực
 SocketService.getInstance().initialize(httpServer);
 
-const server = httpServer.listen(env.PORT, () => {
+const server = httpServer.listen(env.PORT, "0.0.0.0", () => {
   logger.info(`=======================================================`);
   logger.info(`🚗 GRAB RIDE-HAILING PLATFORM BACKEND API STARTED`);
   logger.info(`📡 Port: http://localhost:${env.PORT}`);
