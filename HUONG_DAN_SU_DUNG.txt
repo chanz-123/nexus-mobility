@@ -1,0 +1,39 @@
+================================================================================
+          HƯỚNG DẪN MỞ & SỬ DỤNG HỆ THỐNG NEXUS MOBILITY
+================================================================================
+
+Dành cho người mới:
+
+I. CÁC PHẦN MỀM CẦN CÓ TRÊN MÁY:
+--------------------------------------------------------------------------------
+1. Node.js (Bắt buộc):
+   - Tải miễn phí tại: https://nodejs.org (chọn bản LTS).
+   - Tải về và cài đặt bình thường (bấm Next -> Next -> Finish).
+
+2. MySQL (Cơ sở dữ liệu):
+   - Cách dễ nhất là tải XAMPP (https://www.apachefriends.org) hoặc Laragon.
+   - Mở bảng điều khiển và bấm nút "Start" ở mục MySQL (cổng 3306).
+
+
+II. CÁCH MỞ WEB (CHỈ CẦN 1 BƯỚC DUY NHẤT):
+--------------------------------------------------------------------------------
+👉 Nhấp đúp chuột vào file: [START.bat]
+   - Máy sẽ tự động kiểm tra, khởi động máy chủ và tự bật trình duyệt Web 
+     tại địa chỉ: http://localhost:3000
+
+
+III. TÀI KHOẢN MẪU ĐỂ TRẢI NGHIỆM ĐẦY ĐỦ PHÂN HỆ:
+--------------------------------------------------------------------------------
+1. KHÁCH HÀNG (Đặt xe, xem bản đồ, áp mã giảm giá, thanh toán):
+   - Số điện thoại: 0901234567 (Nguyễn Văn Minh)
+   - Mật khẩu: Grab@2026
+
+2. TÀI XẾ (Bật sẵn sàng, nhận cuốc 15s radar, đón khách, hoàn thành):
+   - Số điện thoại: 0912345678 (Trần Văn Nam)
+   - Mật khẩu: Grab@2026
+
+3. QUẢN TRỊ VIÊN (Xem doanh thu, biểu đồ, giám sát cuốc xe, duyệt tài xế):
+   - Số điện thoại: 0988888888 (Vũ Đức Thắng)
+   - Mật khẩu: Admin@123
+
+================================================================================

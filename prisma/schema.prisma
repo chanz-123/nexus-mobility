@@ -1,0 +1,345 @@
+// =====================================================================================
+// GRAB PLATFORM - 13 thực thể theo tài liệu OOAD (Chương 4.1.2)
+// - PK: CUID (không dùng auto-increment, tránh lộ/đoán ID)
+// - Soft delete: cột deletedAt cho dữ liệu nghiệp vụ; mọi FK dùng onDelete: Restrict
+//   (không bao giờ xóa vật lý -> khớp mục 4.2.2.3 "không DELETE dữ liệu nghiệp vụ")
+// - Tiền tệ: Decimal(12,0) VNĐ; tọa độ: Decimal(10,7)
+// =====================================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ------------------------------------------------------------------ ENUMS
+
+enum VaiTro {
+  KHACH_HANG
+  TAI_XE
+  QUAN_TRI_VIEN
+}
+
+/// Xóa mềm tài khoản: khóa tài khoản chỉ đổi trạng thái
+enum TrangThaiNguoiDung {
+  HOAT_DONG
+  TAM_KHOA
+}
+
+enum TrangThaiKhaDung {
+  SAN_SANG
+  DANG_NHAN_DON // đang trong cửa sổ 15s của QT-02
+  DANG_PHUC_VU
+  TAM_NGHI
+}
+
+enum LoaiDichVu {
+  GRAB_BIKE
+  GRAB_CAR_4
+  GRAB_CAR_7
+}
+
+enum TrangThaiChuyenXe {
+  PENDING
+  ACCEPTED
+  ARRIVED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum PhuongThucThanhToan {
+  TIEN_MAT
+  VI_DIEN_TU
+  THE_NGAN_HANG
+}
+
+enum TrangThaiThanhToan {
+  CHUA_THANH_TOAN
+  DA_THANH_TOAN
+}
+
+enum LoaiGiamGia {
+  FIXED_AMOUNT
+  PERCENTAGE
+}
+
+enum TrangThaiKhuyenMai {
+  HOAT_DONG
+  HET_HAN
+  HET_LUOT
+}
+
+/// 3 trạng thái khớp CRC TinNhan (Chương 3)
+enum TrangThaiTinNhan {
+  DA_GUI
+  DA_NHAN
+  DA_DOC
+}
+
+// ------------------------------------------------------------------ 1-4. NGƯỜI DÙNG (kế thừa)
+
+model NguoiDung {
+  id             String             @id @default(cuid())
+  hoTen          String             @db.VarChar(120)
+  soDienThoai    String?            @unique @db.VarChar(15)
+  email          String?            @unique @db.VarChar(150)
+  matKhauHash    String             @db.VarChar(100)
+  vaiTro         VaiTro
+  trangThai      TrangThaiNguoiDung @default(HOAT_DONG)
+  refreshTokenHash String?          @db.VarChar(100)
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+  deletedAt      DateTime?
+
+  khachHang   KhachHang?
+  taiXe       TaiXe?
+  quanTriVien QuanTriVien?
+
+  tinNhanGui   TinNhan[]   @relation("TinNhanNguoiGui")
+  tinNhanNhan  TinNhan[]   @relation("TinNhanNguoiNhan")
+  lichSuHuy    LichSuHuy[]
+
+  @@index([vaiTro, trangThai])
+  @@index([deletedAt])
+  @@index([email])
+  @@index([soDienThoai])
+}
+
+model KhachHang {
+  nguoiDungId String   @id
+  ngayThamGia DateTime @default(now())
+
+  nguoiDung NguoiDung @relation(fields: [nguoiDungId], references: [id], onDelete: Restrict)
+  chuyenXe  ChuyenXe[]
+  danhGia   DanhGia[]
+}
+
+model TaiXe {
+  nguoiDungId      String           @id
+  soGiayPhepLaiXe  String           @unique @db.VarChar(20)
+  bienSoXe         String           @unique @db.VarChar(15)
+  loaiDichVu       LoaiDichVu       @default(GRAB_CAR_4)
+  trangThaiKhaDung TrangThaiKhaDung @default(TAM_NGHI)
+  diemDanhGia      Decimal          @default(5.00) @db.Decimal(3, 2)
+  soLuotDanhGia    Int              @default(0)
+  ngayThamGia      DateTime         @default(now())
+
+  nguoiDung NguoiDung @relation(fields: [nguoiDungId], references: [id], onDelete: Restrict)
+  chuyenXe  ChuyenXe[]
+  danhGia   DanhGia[]
+  toaDoGPS  ToaDoGPS[]
+
+  @@index([trangThaiKhaDung, loaiDichVu])
+}
+
+model QuanTriVien {
+  nguoiDungId String   @id
+  phongBan    String   @db.VarChar(100)
+  chucVu      String   @db.VarChar(100)
+  ngayThamGia DateTime @default(now())
+
+  nguoiDung NguoiDung @relation(fields: [nguoiDungId], references: [id], onDelete: Restrict)
+}
+
+// ------------------------------------------------------------------ 5. ĐỊA ĐIỂM
+
+model DiaDiem {
+  id            String   @id @default(cuid())
+  tenDiaDiem    String   @db.VarChar(150)
+  diaChiChiTiet String   @db.VarChar(255)
+  kinhDo        Decimal  @db.Decimal(10, 7)
+  viDo          Decimal  @db.Decimal(10, 7)
+  createdAt     DateTime @default(now())
+  deletedAt     DateTime?
+
+  chuyenXeDon ChuyenXe[] @relation("DiemDon")
+  chuyenXeTra ChuyenXe[] @relation("DiemTra")
+
+  @@index([viDo, kinhDo])
+}
+
+// ------------------------------------------------------------------ 6. KHUYẾN MẠI (QT-03)
+
+model KhuyenMai {
+  id               String             @id @default(cuid())
+  maVoucher        String             @unique @db.VarChar(30)
+  tenChuongTrinh   String             @db.VarChar(200)
+  loaiGiamGia      LoaiGiamGia
+  giaTriGiam       Decimal            @db.Decimal(12, 0)
+  giamToiDa        Decimal?           @db.Decimal(12, 0)
+  dieuKienToiThieu Decimal            @default(0) @db.Decimal(12, 0)
+  ngayBatDau       DateTime
+  ngayKetThuc      DateTime
+  /// Giảm bằng UPDATE có điều kiện (soLuong > 0) trong transaction -> chống race condition
+  soLuong          Int
+  trangThai        TrangThaiKhuyenMai @default(HOAT_DONG)
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  deletedAt        DateTime?
+
+  chuyenXe ChuyenXe[]
+
+  @@index([trangThai, ngayBatDau, ngayKetThuc])
+}
+
+// ------------------------------------------------------------------ 7. CHUYẾN XE
+
+model ChuyenXe {
+  id                  String            @id @default(cuid())
+  khachHangId         String
+  taiXeId             String?
+  diemDonId           String
+  diemTraId           String
+  khuyenMaiId         String? // tối đa 01 voucher / chuyến (QT-03)
+  loaiDichVu          LoaiDichVu
+  trangThai           TrangThaiChuyenXe @default(PENDING)
+  thoiGianDat         DateTime          @default(now())
+  thoiGianNhan        DateTime? // mốc ACCEPTED -> tính 5 phút của QT-05
+  thoiGianHoanThanh   DateTime?
+  quangDuongKm        Decimal           @db.Decimal(8, 2)
+  thoiGianDuKienPhut  Int
+  tienGiam            Decimal           @default(0) @db.Decimal(12, 0)
+  soTienCuoiCung      Decimal           @db.Decimal(12, 0)
+  lyDoHuy             String?           @db.VarChar(255)
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+  deletedAt           DateTime?
+
+  khachHang KhachHang  @relation(fields: [khachHangId], references: [nguoiDungId], onDelete: Restrict)
+  taiXe     TaiXe?     @relation(fields: [taiXeId], references: [nguoiDungId], onDelete: Restrict)
+  diemDon   DiaDiem    @relation("DiemDon", fields: [diemDonId], references: [id], onDelete: Restrict)
+  diemTra   DiaDiem    @relation("DiemTra", fields: [diemTraId], references: [id], onDelete: Restrict)
+  khuyenMai KhuyenMai? @relation(fields: [khuyenMaiId], references: [id], onDelete: Restrict)
+
+  hoaDon    HoaDon?
+  danhGia   DanhGia?
+  lichSuHuy LichSuHuy?
+  tinNhan   TinNhan[]
+  lichTrinh LichTrinh[]
+  toaDoGPS  ToaDoGPS[]
+  /// Các khoản phí hủy của chuyến trước được cộng vào chuyến này (QT-05)
+  phiHuyDuocThu LichSuHuy[] @relation("PhiHuyThuTaiChuyen")
+
+  @@index([khachHangId, trangThai])
+  @@index([taiXeId, trangThai])
+  @@index([trangThai, thoiGianDat])
+  @@index([deletedAt])
+}
+
+// ------------------------------------------------------------------ 8. HÓA ĐƠN (QT-04)
+
+model HoaDon {
+  id                  String              @id @default(cuid())
+  chuyenXeId          String              @unique
+  tongTien            Decimal             @db.Decimal(12, 0)
+  phuPhi              Decimal             @default(0) @db.Decimal(12, 0)
+  tienGiam            Decimal             @default(0) @db.Decimal(12, 0)
+  soTienThanhToan     Decimal             @db.Decimal(12, 0)
+  phuongThucThanhToan PhuongThucThanhToan
+  trangThaiThanhToan  TrangThaiThanhToan  @default(CHUA_THANH_TOAN)
+  /// Mã giao dịch phía cổng thanh toán (idempotency cho IPN webhook)
+  maGiaoDichCong      String?             @unique @db.VarChar(100)
+  thoiGianThanhToan   DateTime?
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+  deletedAt           DateTime?
+
+  chuyenXe ChuyenXe @relation(fields: [chuyenXeId], references: [id], onDelete: Restrict)
+
+  @@index([trangThaiThanhToan])
+}
+
+// ------------------------------------------------------------------ 9. ĐÁNH GIÁ
+
+model DanhGia {
+  id              String   @id @default(cuid())
+  chuyenXeId      String   @unique // mỗi chuyến đánh giá tối đa 1 lần
+  khachHangId     String
+  taiXeId         String
+  diemDanhGia     Int // CHECK 1..5 được thêm trong migration SQL
+  nhanXet         String?  @db.VarChar(500)
+  thoiGianDanhGia DateTime @default(now())
+
+  chuyenXe  ChuyenXe  @relation(fields: [chuyenXeId], references: [id], onDelete: Restrict)
+  khachHang KhachHang @relation(fields: [khachHangId], references: [nguoiDungId], onDelete: Restrict)
+  taiXe     TaiXe     @relation(fields: [taiXeId], references: [nguoiDungId], onDelete: Restrict)
+
+  @@index([taiXeId])
+}
+
+// ------------------------------------------------------------------ 10. LỊCH SỬ HỦY (QT-05)
+
+model LichSuHuy {
+  id                  String    @id @default(cuid())
+  chuyenXeId          String    @unique
+  nguoiHuyId          String
+  lyDoHuy             String    @db.VarChar(255)
+  soPhutTaiXeDiChuyen Int       @default(0)
+  phiHuyChuyen        Decimal   @default(0) @db.Decimal(12, 0)
+  /// false = phí 10.000đ chưa được cộng vào chuyến kế tiếp của khách
+  daThuPhi            Boolean   @default(false)
+  chuyenXeThuPhiId    String?
+  thoiGianHuy         DateTime  @default(now())
+
+  chuyenXe       ChuyenXe   @relation(fields: [chuyenXeId], references: [id], onDelete: Restrict)
+  nguoiHuy       NguoiDung  @relation(fields: [nguoiHuyId], references: [id], onDelete: Restrict)
+  chuyenXeThuPhi ChuyenXe?  @relation("PhiHuyThuTaiChuyen", fields: [chuyenXeThuPhiId], references: [id], onDelete: Restrict)
+
+  @@index([nguoiHuyId, daThuPhi])
+}
+
+// ------------------------------------------------------------------ 11. TIN NHẮN (ẩn SĐT)
+
+model TinNhan {
+  id          String           @id @default(cuid())
+  chuyenXeId  String
+  nguoiGuiId  String
+  nguoiNhanId String // CHECK nguoiGuiId <> nguoiNhanId trong migration SQL
+  noiDung     String           @db.VarChar(1000)
+  trangThai   TrangThaiTinNhan @default(DA_GUI)
+  thoiGianGui DateTime         @default(now())
+
+  chuyenXe  ChuyenXe  @relation(fields: [chuyenXeId], references: [id], onDelete: Restrict)
+  nguoiGui  NguoiDung @relation("TinNhanNguoiGui", fields: [nguoiGuiId], references: [id], onDelete: Restrict)
+  nguoiNhan NguoiDung @relation("TinNhanNguoiNhan", fields: [nguoiNhanId], references: [id], onDelete: Restrict)
+
+  @@index([chuyenXeId, thoiGianGui])
+  @@index([nguoiNhanId, trangThai])
+}
+
+// ------------------------------------------------------------------ 12. LỊCH TRÌNH (tuyến DỰ KIẾN)
+
+model LichTrinh {
+  id                 String   @id @default(cuid())
+  chuyenXeId         String
+  thuTuDiem          Int
+  kinhDo             Decimal  @db.Decimal(10, 7)
+  viDo               Decimal  @db.Decimal(10, 7)
+  /// ETA dự kiến từ Map API (khác ToaDoGPS.thoiGianGhiNhan = vị trí thực tế)
+  thoiGianDuKienDen  DateTime
+
+  chuyenXe ChuyenXe @relation(fields: [chuyenXeId], references: [id], onDelete: Restrict)
+
+  @@unique([chuyenXeId, thuTuDiem])
+}
+
+// ------------------------------------------------------------------ 13. TỌA ĐỘ GPS (vị trí THỰC TẾ)
+
+model ToaDoGPS {
+  id              String   @id @default(cuid())
+  taiXeId         String
+  chuyenXeId      String?
+  kinhDo          Decimal  @db.Decimal(10, 7)
+  viDo            Decimal  @db.Decimal(10, 7)
+  thoiGianGhiNhan DateTime @default(now())
+
+  taiXe    TaiXe     @relation(fields: [taiXeId], references: [nguoiDungId], onDelete: Restrict)
+  chuyenXe ChuyenXe? @relation(fields: [chuyenXeId], references: [id], onDelete: Restrict)
+
+  @@index([taiXeId, thoiGianGhiNhan])
+  @@index([chuyenXeId, thoiGianGhiNhan])
+}

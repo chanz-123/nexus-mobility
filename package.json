@@ -1,0 +1,58 @@
+{
+  "name": "grab-platform",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Nền tảng đặt xe trực tuyến (Ride-Hailing) - Backend Node.js/TypeScript",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "client:install": "cd client && npm install",
+    "client:dev": "cd client && npm run dev",
+    "dev:all": "npx concurrently -n \"BACKEND,FRONTEND\" -c \"blue,green\" \"npm run dev\" \"npm run client:dev\"",
+    "build": "tsc -p tsconfig.build.json",
+    "build:all": "npm run build && cd client && npm install && npm run build",
+    "start": "node dist/server.js",
+    "typecheck": "tsc --noEmit",
+    "test:email": "tsx test-email.ts",
+    "infra:up": "docker compose up -d",
+    "infra:down": "docker compose down",
+    "prisma:generate": "prisma generate",
+    "prisma:validate": "prisma validate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:deploy": "prisma migrate deploy",
+    "prisma:seed": "prisma db seed",
+    "db:reset": "prisma migrate reset --force"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.0.0",
+    "@types/nodemailer": "^8.0.2",
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.2",
+    "express-rate-limit": "^7.5.0",
+    "helmet": "^8.0.0",
+    "ioredis": "^5.4.1",
+    "jsonwebtoken": "^9.0.2",
+    "nodemailer": "^10.4.0",
+    "pino": "^9.6.0",
+    "pino-pretty": "^13.0.0",
+    "socket.io": "^4.8.1",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/jsonwebtoken": "^9.0.8",
+    "@types/node": "^20.14.0",
+    "prisma": "^6.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
+  }
+}
