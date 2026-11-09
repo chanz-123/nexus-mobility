@@ -118,12 +118,15 @@ export const MapView: React.FC<MapViewProps> = ({
         scrollWheelZoom: interactive,
       });
 
-      L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
-        attribution:
-          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-        subdomains: "abcd",
-        maxZoom: 20,
-      }).addTo(mapInstance);
+      // Bản đồ số đường phố vệ tinh Esri ArcGIS - Độ ổn định cao, không yêu cầu API key, không bị chặn
+      L.tileLayer(
+        "https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}",
+        {
+          attribution:
+            'Bản đồ &copy; <a href="https://www.esri.com/">Esri</a> &mdash; Source: Esri, USGS, TomTom',
+          maxZoom: 19,
+        }
+      ).addTo(mapInstance);
 
       if (interactive) {
         L.control.zoom({ position: "bottomright" }).addTo(mapInstance);
