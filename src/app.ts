@@ -14,8 +14,38 @@ import { NotFoundError } from "./common/exceptions/app-error";
 export const createApp = (): Application => {
   const app = express();
 
-  // 1. Bảo mật HTTP Headers
-  app.use(helmet());
+  // 1. Bảo mật HTTP Headers (Cấu hình CSP cho phép tải bản đồ OpenStreetMap & định tuyến OSRM)
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+          styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://unpkg.com"],
+          fontSrc: ["'self'", "https://fonts.gstatic.com", "data:"],
+          imgSrc: [
+            "'self'",
+            "data:",
+            "blob:",
+            "https://*.tile.openstreetmap.org",
+            "https://tile.openstreetmap.org",
+            "https://*.basemaps.cartocdn.com",
+            "https://unpkg.com",
+          ],
+          connectSrc: [
+            "'self'",
+            "ws:",
+            "wss:",
+            "https://*.tile.openstreetmap.org",
+            "https://tile.openstreetmap.org",
+            "https://router.project-osrm.org",
+          ],
+        },
+      },
+      crossOriginEmbedderPolicy: false,
+      crossOriginResourcePolicy: { policy: "cross-origin" },
+    })
+  );
 
   // 2. Cấu hình CORS
   app.use(
